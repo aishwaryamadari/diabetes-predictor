@@ -1192,8 +1192,8 @@ async function doRegister() {
   }
 
   const { data, error } = await supabase.auth.signUp({
-    email,
-    password
+    email: email,
+    password: password
   });
 
   if (error) {
@@ -1201,25 +1201,8 @@ async function doRegister() {
     return;
   }
 
-  // 🔥 get user after signup
-  const user = data.user;
-
-  if (user) {
-    const { error: insertError } = await supabase.from("users").insert([
-      {
-        id: user.id,   // IMPORTANT
-        full_name: username,
-        email: email
-      }
-    ]);
-
-    if (insertError) {
-      console.error(insertError);
-    }
-  }
-
   closeModal();
-  showToast("Signup successful!", "success");
+  showToast("Signup successful! Please check your email.", "success");
 }
 
 function setAuth(t, u) {
