@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🩺 Diabetes Risk Predictor
 
 > A production-grade, full-stack diabetes risk assessment system powered by Machine Learning, Flask, and a premium healthcare-grade UI.
@@ -252,3 +253,15 @@ This application is built for **educational and portfolio purposes only**. It do
 ## 📄 License
 
 MIT © 2025
+=======
+---
+title: Diabetes Predictor
+emoji: 🐠
+colorFrom: pink
+colorTo: yellow
+sdk: docker
+pinned: false
+---
+
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+>>>>>>> 0caffa0c62eaa9b923aee94733459f225ce7a673
