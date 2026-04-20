@@ -1189,15 +1189,25 @@ async function doRegister() {
     return;
   }
 
-  await supabase.from("users").insert([
-    {
-      full_name: username,
-      email: email
+  // 🔥 get user after signup
+  const user = data.user;
+
+  if (user) {
+    const { error: insertError } = await supabase.from("users").insert([
+      {
+        id: user.id,   // IMPORTANT
+        full_name: username,
+        email: email
+      }
+    ]);
+
+    if (insertError) {
+      console.error(insertError);
     }
-  ]);
+  }
 
   closeModal();
-  showToast("Signup successful! Check your email.", "success");
+  showToast("Signup successful!", "success");
 }
 
 function setAuth(t, u) {
