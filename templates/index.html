@@ -1400,5 +1400,19 @@ function calculateDPF() {
   showToast('Pedigree Function estimated and applied', 'success');
 }
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabaseUrl = "https://ijvuvhuryaiszfwlyjhf.supabase.co";
+
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdnV2aHVyeWFpc3pmd2x5amhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MDgzMzksImV4cCI6MjA5MjI4NDMzOX0.Ie7D80mCZpNAqtbyTJOw_BcA8DpxXzCQEVl_a-SHtK0";
+
+const supabase = window.supabase.createClient(
+  supabaseUrl,
+  supabaseKey
+);
+</script>
+
 </body>
 </html>
