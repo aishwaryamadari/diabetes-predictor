@@ -1,0 +1,13 @@
+/* static/css/print.css — Print styles for PDF-style page printing */
+
+@media print {
+  .navbar,
+  .submit-btn,
+  #result-section:not(.visible),
+  footer { display: none !important; }
+
+  body { background: white; font-size: 12pt; }
+  .main-grid { display: block; }
+  .card { box-shadow: none; border: 1px solid #ccc; }
+  .result-card { break-inside: avoid; }
+}

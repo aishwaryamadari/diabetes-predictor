@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Diabetes Risk Predictor — Clinical AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --blue:      #4A90E2;
+  --blue-dark: #2E6DB4;
+  --blue-glow: rgba(74,144,226,0.15);
+  --bg:        #F7F9FB;
+  --surface:   #FFFFFF;
+  --border:    #E4EAF2;
+  --text:      #2C2C2C;
+  --muted:     #7A8899;
+  --green:     #27AE60;
+  --green-bg:  #EAF7EE;
+  --red:       #E05252;
+  --red-bg:    #FCEAEA;
+  --amber:     #E8900C;
+  --amber-bg:  #FEF3E2;
+  --radius:    12px;
+  --shadow:    0 2px 16px rgba(44,70,110,0.08);
+  --shadow-lg: 0 8px 40px rgba(44,70,110,0.13);
+  --font:      'DM Sans', sans-serif;
+  --serif:     'DM Serif Display', serif;
+  --mono:      'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── NAVBAR ───────────────────────────────────────────────────────── */
+.navbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.navbar-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.brand-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-glow);
+  animation: pulse 2.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--blue-glow); }
+  50%       { box-shadow: 0 0 0 7px transparent; }
+}
+.navbar-actions { display: flex; align-items: center; gap: 12px; }
+.btn-ghost {
+  padding: 8px 18px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent; cursor: pointer;
+  font-family: var(--font); font-size: 0.875rem; font-weight: 500;
+  color: var(--muted); transition: all 0.2s;
+}
+.btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
+.btn-primary {
+  padding: 8px 20px; border-radius: 8px; border: none;
+  background: var(--blue); color: #fff; cursor: pointer;
+  font-family: var(--font); font-size: 0.875rem; font-weight: 500;
+  transition: all 0.2s; position: relative; overflow: hidden;
+}
+.btn-primary:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(74,144,226,0.35); }
+.btn-primary:active { transform: translateY(0); }
+
+/* ── HERO ─────────────────────────────────────────────────────────── */
+.hero {
+  text-align: center;
+  padding: 72px 24px 48px;
+  animation: fadeUp 0.6s ease both;
+}
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(18px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px; border-radius: 100px;
+  background: var(--blue-glow); border: 1px solid rgba(74,144,226,0.25);
+  font-size: 0.75rem; font-weight: 500; color: var(--blue);
+  letter-spacing: 0.04em; text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.2;
+  color: var(--text);
+  max-width: 640px; margin: 0 auto 16px;
+}
+.hero h1 em { font-style: italic; color: var(--blue); }
+.hero p {
+  font-size: 1rem; color: var(--muted);
+  max-width: 480px; margin: 0 auto;
+}
+
+/* ── MAIN GRID ────────────────────────────────────────────────────── */
+.main-grid {
+  max-width: 1080px; margin: 0 auto;
+  padding: 0 24px 80px;
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .main-grid { grid-template-columns: 1fr; }
+}
+
+/* ── CARD ─────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.card-header {
+  padding: 20px 24px 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+.card-title {
+  font-size: 0.8rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.card-body { padding: 0 24px 24px; }
+
+/* ── FORM ─────────────────────────────────────────────────────────── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field.full { grid-column: 1 / -1; }
+
+.field label {
+  font-size: 0.78rem; font-weight: 500;
+  color: var(--muted); letter-spacing: 0.02em;
+  display: flex; align-items: center; gap: 6px;
+}
+.field label .unit {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1px 6px; border-radius: 4px;
+  color: var(--blue);
+}
+.field-wrap { position: relative; }
+.field input {
+  width: 100%; padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  font-family: var(--mono); font-size: 0.9rem;
+  color: var(--text);
+  transition: all 0.2s; outline: none;
+}
+.field input:focus {
+  border-color: var(--blue);
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--blue-glow);
+}
+.field input.invalid {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(224,82,82,0.12);
+}
+.field-error {
+  font-size: 0.73rem; color: var(--red);
+  opacity: 0; transition: opacity 0.2s;
+  min-height: 16px;
+}
+.field-error.show { opacity: 1; }
+
+.submit-btn {
+  width: 100%; margin-top: 20px; padding: 14px;
+  border-radius: 10px; border: none;
+  background: var(--blue); color: #fff;
+  font-family: var(--font); font-size: 1rem; font-weight: 500;
+  cursor: pointer; transition: all 0.22s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 12px rgba(74,144,226,0.3);
+}
+.submit-btn:hover:not(:disabled) {
+  background: var(--blue-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(74,144,226,0.4);
+}
+.submit-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner.active { display: block; }
+
+/* ── RESULT CARD ──────────────────────────────────────────────────── */
+#result-section {
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+}
+#result-section.visible {
+  opacity: 1; transform: translateY(0);
+  pointer-events: all;
+}
+
+.result-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.result-header {
+  padding: 20px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.result-label {
+  font-family: var(--serif); font-size: 1.6rem;
+}
+.result-badge {
+  padding: 4px 14px; border-radius: 100px;
+  font-size: 0.78rem; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.result-card.low  .result-header { background: var(--green-bg); }
+.result-card.low  .result-label  { color: var(--green); }
+.result-card.low  .result-badge  { background: var(--green); color: #fff; }
+.result-card.high .result-header { background: var(--red-bg); }
+.result-card.high .result-label  { color: var(--red); }
+.result-card.high .result-badge  { background: var(--red); color: #fff; }
+.result-card.moderate .result-header { background: var(--amber-bg); }
+.result-card.moderate .result-label  { color: var(--amber); }
+.result-card.moderate .result-badge  { background: var(--amber); color: #fff; }
+
+.result-body { padding: 20px 24px; background: #fff; }
+.prob-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.prob-number {
+  font-family: var(--mono); font-size: 2.4rem; font-weight: 500;
+  color: var(--text);
+}
+.prob-sub { font-size: 0.78rem; color: var(--muted); text-align: right; }
+
+.prob-bar-wrap {
+  height: 6px; background: var(--bg); border-radius: 100px; overflow: hidden;
+  margin-bottom: 20px;
+}
+.prob-bar {
+  height: 100%; border-radius: 100px;
+  transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+.low  .prob-bar { background: var(--green); }
+.high .prob-bar { background: var(--red); }
+.moderate .prob-bar { background: var(--amber); }
+
+/* ── GAUGE CHART ──────────────────────────────────────────────────── */
+.gauge-wrap {
+  display: flex; justify-content: center; margin-bottom: 20px;
+  position: relative;
+}
+.gauge-wrap canvas { max-width: 200px; }
+.gauge-center {
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  text-align: center;
+}
+.gauge-center .val {
+  font-family: var(--mono); font-size: 1.2rem; font-weight: 500;
+}
+
+/* ── FACTOR BARS ──────────────────────────────────────────────────── */
+.factors-title {
+  font-size: 0.73rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--muted); margin-bottom: 12px;
+}
+.factor-item { margin-bottom: 10px; }
+.factor-name-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 4px;
+}
+.factor-name { font-size: 0.82rem; color: var(--text); }
+.factor-val  { font-size: 0.75rem; font-family: var(--mono); color: var(--muted); }
+.factor-bar-wrap {
+  height: 4px; background: var(--bg); border-radius: 100px; overflow: hidden;
+}
+.factor-bar {
+  height: 100%; border-radius: 100px; background: var(--blue);
+  transition: width 0.7s ease;
+}
+
+/* ── RIGHT PANEL ──────────────────────────────────────────────────── */
+.right-panel { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── MODEL METRICS ────────────────────────────────────────────────── */
+.metrics-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  padding: 0 24px 24px;
+}
+.metric-tile {
+  background: var(--bg); border-radius: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+}
+.metric-tile .label {
+  font-size: 0.7rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.metric-tile .value {
+  font-family: var(--mono); font-size: 1.25rem; font-weight: 500;
+  color: var(--blue);
+}
+
+/* ── HISTORY TABLE ────────────────────────────────────────────────── */
+.history-empty {
+  padding: 32px 24px; text-align: center;
+  color: var(--muted); font-size: 0.875rem;
+}
+.history-list { max-height: 260px; overflow-y: auto; }
+.history-row {
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--bg);
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 0.82rem;
+  cursor: pointer; transition: background 0.15s;
+}
+.history-row:hover { background: var(--bg); }
+.history-row .ts { color: var(--muted); font-family: var(--mono); font-size: 0.72rem; }
+.history-row .risk {
+  padding: 3px 10px; border-radius: 100px;
+  font-size: 0.7rem; font-weight: 600;
+}
+.risk-low  { background: var(--green-bg); color: var(--green); }
+.risk-high { background: var(--red-bg); color: var(--red); }
+.risk-moderate { background: var(--amber-bg); color: var(--amber); }
+
+/* ── MODAL ────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(20,30,48,0.45);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: #fff; border-radius: 16px;
+  padding: 36px 32px; width: 100%; max-width: 400px;
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.95) translateY(10px); transition: transform 0.25s;
+}
+.modal-overlay.open .modal { transform: scale(1) translateY(0); }
+.modal h2 {
+  font-family: var(--serif); font-size: 1.6rem;
+  margin-bottom: 24px;
+}
+.modal-tabs {
+  display: flex; gap: 4px;
+  background: var(--bg); border-radius: 8px; padding: 4px;
+  margin-bottom: 24px;
+}
+.modal-tab {
+  flex: 1; padding: 8px; border: none; border-radius: 6px;
+  background: transparent; cursor: pointer;
+  font-family: var(--font); font-size: 0.85rem; font-weight: 500;
+  color: var(--muted); transition: all 0.2s;
+}
+.modal-tab.active { background: #fff; color: var(--text); box-shadow: var(--shadow); }
+.modal-field { margin-bottom: 16px; }
+.modal-field label {
+  display: block; font-size: 0.8rem; font-weight: 500;
+  color: var(--muted); margin-bottom: 6px;
+}
+.modal-field input {
+  width: 100%; padding: 11px 14px; border-radius: 8px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  font-family: var(--font); font-size: 0.9rem; outline: none;
+  transition: all 0.2s;
+}
+.modal-field input:focus {
+  border-color: var(--blue); background: #fff;
+  box-shadow: 0 0 0 3px var(--blue-glow);
+}
+.modal-error {
+  font-size: 0.78rem; color: var(--red);
+  margin-bottom: 12px; min-height: 18px;
+}
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; cursor: pointer;
+  font-size: 1.2rem; color: var(--muted); padding: 8px;
+  border-radius: 6px; transition: color 0.2s;
+}
+.modal-close:hover { color: var(--text); }
+.modal { position: relative; }
+
+/* ── USER CHIP ────────────────────────────────────────────────────── */
+.user-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 100px;
+  background: var(--bg); border: 1px solid var(--border);
+  font-size: 0.82rem; color: var(--text);
+}
+.user-chip .avatar {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--blue); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 600;
+}
+
+/* ── TOAST ────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 300;
+  background: var(--text); color: #fff;
+  padding: 12px 20px; border-radius: 10px;
+  font-size: 0.875rem; box-shadow: var(--shadow-lg);
+  transform: translateY(20px); opacity: 0;
+  transition: all 0.3s; pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { background: var(--green); }
+.toast.error   { background: var(--red); }
+
+/* ── FOOTER ───────────────────────────────────────────────────────── */
+footer {
+  text-align: center; padding: 24px;
+  font-size: 0.78rem; color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+footer a { color: var(--blue); text-decoration: none; }
+
+/* ── RESPONSIVE TWEAKS ────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .navbar { padding: 0 16px; }
+  .hero { padding: 48px 16px 32px; }
+  .main-grid { padding: 0 16px 60px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <div class="brand-dot"></div>
+    Diabetes Risk Predictor
+  </a>
+  <div class="navbar-actions" id="nav-actions">
+    <button class="btn-ghost" onclick="openModal('login')">Sign In</button>
+    <button class="btn-primary" onclick="openModal('register')">Get Started</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">
+    <svg width="7" height="7" viewBox="0 0 7 7" fill="currentColor"><circle cx="3.5" cy="3.5" r="3.5"/></svg>
+    ML-Powered Clinical Assessment
+  </div>
+  <h1>Predict Your Diabetes Risk <em>Intelligently</em></h1>
+  <p>Enter your health metrics below for an instant AI-powered risk assessment with explainable results.</p>
+</div>
+
+<!-- MAIN GRID -->
+<div class="main-grid">
+
+  <!-- LEFT: PREDICTION FORM -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Health Metrics Input</div>
+      </div>
+      <div class="card-body">
+        <form id="predict-form" autocomplete="off">
+          <div class="form-grid">
+
+            <div class="field">
+              <label>Pregnancies</label>
+              <div class="field-wrap">
+                <input type="number" id="f-preg" placeholder="0" min="0" max="20" step="1"/>
+              </div>
+              <div class="field-error" id="err-preg"></div>
+            </div>
+
+            <div class="field">
+              <label>Glucose <span class="unit">mg/dL</span></label>
+              <div class="field-wrap">
+                <input type="number" id="f-glucose" placeholder="99" min="0" max="300" step="1"/>
+              </div>
+              <div class="field-error" id="err-glucose"></div>
+            </div>
+
+            <div class="field">
+              <label>Blood Pressure <span class="unit">mmHg</span></label>
+              <div class="field-wrap">
+                <input type="number" id="f-bp" placeholder="72" min="0" max="200" step="1"/>
+              </div>
+              <div class="field-error" id="err-bp"></div>
+            </div>
+
+            <div class="field">
+              <label>Skin Thickness <span class="unit">mm</span></label>
+              <div class="field-wrap">
+                <input type="number" id="f-skin" placeholder="23" min="0" max="100" step="1"/>
+              </div>
+              <div class="field-error" id="err-skin"></div>
+            </div>
+
+            <div class="field">
+              <label>Insulin <span class="unit">μU/mL</span></label>
+              <div class="field-wrap">
+                <input type="number" id="f-insulin" placeholder="80" min="0" max="900" step="1"/>
+              </div>
+              <div class="field-error" id="err-insulin"></div>
+            </div>
+
+            <div class="field">
+              <label>BMI <span class="unit">kg/m²</span> <a href="javascript:void(0)" onclick="openCalcModal('bmi')" style="margin-left:auto; font-size:0.7rem; color:var(--blue); text-decoration:none;">Calculate</a></label>
+              <div class="field-wrap">
+                <input type="number" id="f-bmi" placeholder="28.0" min="0" max="70" step="0.1"/>
+              </div>
+              <div class="field-error" id="err-bmi"></div>
+            </div>
+
+            <div class="field">
+              <label>Diabetes Pedigree <a href="javascript:void(0)" onclick="openCalcModal('dpf')" style="margin-left:auto; font-size:0.7rem; color:var(--blue); text-decoration:none;">Calculate</a></label>
+              <div class="field-wrap">
+                <input type="number" id="f-dpf" placeholder="0.470" min="0" max="2.5" step="0.001"/>
+              </div>
+              <div class="field-error" id="err-dpf"></div>
+            </div>
+
+            <div class="field">
+              <label>Age <span class="unit">years</span></label>
+              <div class="field-wrap">
+                <input type="number" id="f-age" placeholder="35" min="1" max="120" step="1"/>
+              </div>
+              <div class="field-error" id="err-age"></div>
+            </div>
+
+          </div><!-- /form-grid -->
+
+          <button type="submit" class="submit-btn" id="predict-btn">
+            <span id="btn-text">Predict Risk</span>
+            <div class="spinner" id="btn-spinner"></div>
+          </button>
+        </form>
+      </div>
+    </div><!-- /card -->
+
+    <!-- Reference Ranges -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-header"><div class="card-title">Reference Ranges</div></div>
+      <div class="card-body" style="padding-top:0;">
+        <table style="width:100%; font-size:0.8rem; border-collapse:collapse;">
+          <thead>
+            <tr style="color:var(--muted); text-align:left;">
+              <th style="padding:8px 0; font-weight:500;">Metric</th>
+              <th style="padding:8px 0; font-weight:500;">Normal Range</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:6px 0; border-top:1px solid var(--bg);">Glucose</td><td style="color:var(--muted);">70–100 mg/dL</td></tr>
+            <tr><td style="padding:6px 0; border-top:1px solid var(--bg);">Blood Pressure</td><td style="color:var(--muted);">&lt; 120 mmHg</td></tr>
+            <tr><td style="padding:6px 0; border-top:1px solid var(--bg);">BMI</td><td style="color:var(--muted);">18.5–24.9</td></tr>
+            <tr><td style="padding:6px 0; border-top:1px solid var(--bg);">Insulin</td><td style="color:var(--muted);">2–25 μU/mL</td></tr>
+            <tr><td style="padding:6px 0; border-top:1px solid var(--bg);">Skin Thickness</td><td style="color:var(--muted);">Triceps fold calipers</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RESULT SECTION -->
+    <div id="result-section" style="margin-top:24px;">
+      <div class="result-card" id="result-card">
+        <div class="result-header">
+          <div class="result-label" id="result-label">—</div>
+          <div class="result-badge" id="result-badge">—</div>
+        </div>
+        <div class="result-body">
+          <div class="prob-row">
+            <div class="prob-number" id="prob-num">0%</div>
+            <div class="prob-sub">Diabetes<br/>Probability</div>
+          </div>
+          <div class="prob-bar-wrap">
+            <div class="prob-bar" id="prob-bar" style="width:0%"></div>
+          </div>
+
+          <!-- Gauge Chart -->
+          <div class="gauge-wrap">
+            <canvas id="gauge-chart" width="200" height="120"></canvas>
+            <div class="gauge-center">
+              <div class="val" id="gauge-label">—</div>
+            </div>
+          </div>
+
+          <!-- Top Factors -->
+          <div class="factors-title">Key Contributing Factors</div>
+          <div id="factors-list"></div>
+
+          <!-- Doctor Summary -->
+          <div style="margin-top:16px; padding:12px; border-radius:8px; background:var(--blue-glow); border:1px solid rgba(74,144,226,0.2);">
+            <div style="font-size:0.75rem; font-weight:600; color:var(--blue); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+              Clinical Summary
+            </div>
+            <div id="doctor-summary" style="font-size:0.8rem; color:var(--text); line-height:1.5;">—</div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display:flex; gap:10px; margin-top:18px;">
+            <button id="download-pdf-btn"
+                    onclick="downloadPDF()"
+                    style="flex:1; padding:9px; border-radius:8px; border:1px solid var(--border);
+                           background:var(--bg); color:var(--text); font-family:var(--font);
+                           font-size:0.82rem; cursor:pointer; transition:all 0.2s;"
+                    onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'"
+                    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'"
+                    disabled>
+              ↓ PDF Report
+            </button>
+            <button onclick="resetForm()"
+                    style="flex:1; padding:9px; border-radius:8px; border:1px solid var(--border);
+                           background:var(--bg); color:var(--muted); font-family:var(--font);
+                           font-size:0.82rem; cursor:pointer; transition:all 0.2s;"
+                    onmouseover="this.style.color='var(--text)'"
+                    onmouseout="this.style.color='var(--muted)'">
+              New Assessment
+            </button>
+          </div>
+        </div>
+      </div>
+    </div><!-- /result-section -->
+  </div><!-- /left -->
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <!-- Model Performance -->
+    <div class="card" id="metrics-card">
+      <div class="card-header">
+        <div class="card-title">Model Performance</div>
+      </div>
+      <div class="metrics-grid" id="metrics-grid">
+        <div class="metric-tile"><div class="label">Accuracy</div><div class="value" id="m-acc">—</div></div>
+        <div class="metric-tile"><div class="label">ROC-AUC</div><div class="value" id="m-auc">—</div></div>
+        <div class="metric-tile"><div class="label">Precision</div><div class="value" id="m-pre">—</div></div>
+        <div class="metric-tile"><div class="label">F1 Score</div><div class="value" id="m-f1">—</div></div>
+      </div>
+      <div style="padding: 0 24px 16px;">
+        <div style="font-size:0.72rem; color:var(--muted);">
+          Best model: <span id="m-name" style="color:var(--blue); font-weight:500;">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prediction History -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Recent Predictions</div>
+      </div>
+      <div id="history-container">
+        <div class="history-empty" id="history-empty">
+          Your prediction history will appear here.
+        </div>
+        <div class="history-list" id="history-list" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Multi-Format Upload -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Smart Data Extraction</div></div>
+      <div class="card-body" style="padding-top:0;">
+        <p style="font-size:0.82rem; color:var(--muted); margin-bottom:12px;">
+          Upload patient data for auto-extraction (CSV, Excel, PDF, Word, TXT, JPG, PNG).
+        </p>
+        <div id="drop-zone"
+             style="border:2px dashed var(--border); border-radius:8px; padding:20px;
+                    text-align:center; cursor:pointer; transition:all 0.2s;"
+             onclick="document.getElementById('upload-file').click()"
+             ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
+             ondragleave="this.style.borderColor='var(--border)'"
+             ondrop="handleDrop(event)">
+          <div style="font-size:1.4rem; margin-bottom:6px;">📂</div>
+          <div style="font-size:0.82rem; color:var(--muted);">Click or drag file here</div>
+          <div id="drop-filename" style="font-size:0.75rem; color:var(--blue); margin-top:4px;"></div>
+        </div>
+        <input type="file" id="upload-file" accept=".csv,.xlsx,.xls,.pdf,.docx,.txt,.png,.jpg,.jpeg" style="display:none" onchange="handleFileSelect(this)"/>
+        <button class="submit-btn" onclick="doUploadPredict()" style="margin-top:12px; font-size:0.875rem; padding:10px;">
+          Process File & Predict
+        </button>
+        <div id="batch-results" style="display:none; margin-top:14px;"></div>
+        <div style="margin-top:8px;">
+          <a href="/static/sample_batch.csv" style="font-size:0.75rem; color:var(--blue);">
+            ↓ Download sample CSV
+          </a>
+        </div>
+      </div>
+    </div>
+
+
+
+  </div><!-- /right-panel -->
+</div><!-- /main-grid -->
+
+<footer>
+  Built with Flask · Scikit-learn · Chart.js &nbsp;|&nbsp;
+  <a href="https://your-huggingface-space-url.hf.space/api/metrics">API Docs</a> &nbsp;|&nbsp;
+  For educational purposes only — not a medical device.
+</footer>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 id="modal-title">Welcome back</h2>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+      <button class="modal-tab" id="tab-register" onclick="switchTab('register')">Register</button>
+    </div>
+    <div class="modal-error" id="modal-error"></div>
+    <div id="login-form">
+      <div class="modal-field">
+        <label>Username</label>
+        <input type="text" id="login-user" placeholder="your_username"/>
+      </div>
+      <div class="modal-field">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••"/>
+      </div>
+      <button class="submit-btn" onclick="doLogin()" style="margin-top:8px;">Sign In</button>
+    </div>
+    <div id="register-form" style="display:none;">
+      <div class="modal-field">
+        <label>Username</label>
+        <input type="text" id="reg-user" placeholder="choose_username"/>
+      </div>
+      <div class="modal-field">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="you@example.com"/>
+      </div>
+      <div class="modal-field">
+        <label>Password</label>
+        <input type="password" id="reg-pass" placeholder="min 8 characters"/>
+      </div>
+      <button class="submit-btn" onclick="doRegister()" style="margin-top:8px;">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALCULATOR MODAL -->
+<div class="modal-overlay" id="calc-modal-overlay" onclick="closeCalcModalOnBg(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCalcModal()">✕</button>
+    <h2>Calculator</h2>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tab-bmi" onclick="switchCalcTab('bmi')">BMI</button>
+      <button class="modal-tab" id="tab-dpf" onclick="switchCalcTab('dpf')">Pedigree (DPF)</button>
+    </div>
+    
+    <div id="calc-bmi-form">
+      <div class="modal-field">
+        <label>Weight (kg)</label>
+        <input type="number" id="calc-weight" placeholder="e.g. 70" step="0.1"/>
+      </div>
+      <div class="modal-field">
+        <label>Height (cm)</label>
+        <input type="number" id="calc-height" placeholder="e.g. 175" step="1"/>
+      </div>
+      <button class="submit-btn" onclick="calculateBMI()" style="margin-top:8px;">Calculate & Apply</button>
+    </div>
+    
+    <div id="calc-dpf-form" style="display:none;">
+      <p style="font-size:0.8rem; color:var(--muted); margin-bottom:12px;">
+        Estimate based on family history.
+      </p>
+      <div class="modal-field">
+        <label>Parent with Diabetes</label>
+        <select id="calc-dpf-parent" style="width:100%; padding:11px 14px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg); font-family:var(--font); font-size:0.9rem; outline:none; color:var(--text);">
+          <option value="0">None</option>
+          <option value="1">One Parent</option>
+          <option value="2">Both Parents</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Other Relatives with Diabetes</label>
+        <select id="calc-dpf-relative" style="width:100%; padding:11px 14px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg); font-family:var(--font); font-size:0.9rem; outline:none; color:var(--text);">
+          <option value="0">None</option>
+          <option value="1">One Relative</option>
+          <option value="2">Multiple Relatives</option>
+        </select>
+      </div>
+      <button class="submit-btn" onclick="calculateDPF()" style="margin-top:8px;">Calculate & Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── API Config ─────────────────────────────────────────────────────────────
+const API_BASE_URL = "https://your-huggingface-space-url.hf.space"; // REPLACE THIS BEFORE DEPLOYMENT!
+
+// ── State ──────────────────────────────────────────────────────────────────
+let token   = localStorage.getItem('drp_token');
+let user    = JSON.parse(localStorage.getItem('drp_user') || 'null');
+let history = [];
+let gaugeChart = null;
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadMetrics();
+  updateNav();
+  if (token) loadHistory();
+
+  document.getElementById('predict-form').addEventListener('submit', e => {
+    e.preventDefault();
+    doPrediction();
+  });
+});
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function updateNav() {
+  const el = document.getElementById('nav-actions');
+  if (user) {
+    el.innerHTML = `
+      <div class="user-chip">
+        <div class="avatar">${user.username[0].toUpperCase()}</div>
+        ${user.username}
+      </div>
+      <button class="btn-ghost" onclick="doLogout()">Sign Out</button>`;
+  } else {
+    el.innerHTML = `
+      <button class="btn-ghost" onclick="openModal('login')">Sign In</button>
+      <button class="btn-primary" onclick="openModal('register')">Get Started</button>`;
+  }
+}
+
+// ── Prediction ─────────────────────────────────────────────────────────────
+function getFormData() {
+  return {
+    Pregnancies:              parseFloat(document.getElementById('f-preg').value)    || 0,
+    Glucose:                  parseFloat(document.getElementById('f-glucose').value)  || 0,
+    BloodPressure:            parseFloat(document.getElementById('f-bp').value)       || 0,
+    SkinThickness:            parseFloat(document.getElementById('f-skin').value)     || 0,
+    Insulin:                  parseFloat(document.getElementById('f-insulin').value)  || 0,
+    BMI:                      parseFloat(document.getElementById('f-bmi').value)      || 0,
+    DiabetesPedigreeFunction: parseFloat(document.getElementById('f-dpf').value)      || 0,
+    Age:                      parseFloat(document.getElementById('f-age').value)      || 0,
+  };
+}
+
+function clearErrors() {
+  document.querySelectorAll('.field-error').forEach(e => {
+    e.textContent = ''; e.classList.remove('show');
+  });
+  document.querySelectorAll('.field input').forEach(i => i.classList.remove('invalid'));
+}
+
+function showFieldError(id, msg) {
+  const errEl = document.getElementById('err-' + id);
+  const inEl  = document.getElementById('f-' + id);
+  if (errEl) { errEl.textContent = msg; errEl.classList.add('show'); }
+  if (inEl)  { inEl.classList.add('invalid'); }
+}
+
+async function doPrediction() {
+  clearErrors();
+  const data = getFormData();
+
+  // Basic client-side validation
+  const map = {
+    preg: ['Pregnancies', 0, 20],
+    glucose: ['Glucose', 44, 280],
+    bp: ['BloodPressure', 0, 200],
+    skin: ['SkinThickness', 0, 100],
+    insulin: ['Insulin', 0, 900],
+    bmi: ['BMI', 5, 70],
+    dpf: ['DiabetesPedigreeFunction', 0, 2.5],
+    age: ['Age', 1, 120],
+  };
+  let hasErr = false;
+  for (const [id, [field, min, max]] of Object.entries(map)) {
+    const v = data[field];
+    if (isNaN(v) || v === '') {
+      showFieldError(id, 'Required'); hasErr = true;
+    } else if (v < min || v > max) {
+      showFieldError(id, `Range: ${min}–${max}`); hasErr = true;
+    }
+  }
+  if (hasErr) return;
+
+  // UI: loading state
+  const btn     = document.getElementById('predict-btn');
+  const btnText = document.getElementById('btn-text');
+  const spinner = document.getElementById('btn-spinner');
+  btn.disabled = true;
+  btnText.textContent = 'Analyzing…';
+  spinner.classList.add('active');
+
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+
+    const res = await fetch(API_BASE_URL + '/api/predict', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+
+    if (!res.ok) throw new Error(result.error || 'Prediction failed');
+
+    showResult(result);
+    addToHistory(result, data);
+    // Enable PDF download
+    if (result.history_id) {
+      lastHistoryId = result.history_id;
+      document.getElementById('download-pdf-btn').disabled = false;
+    }
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Predict Risk';
+    spinner.classList.remove('active');
+  }
+}
+
+function showResult(result) {
+  const prob     = result.probability;
+  const risk     = result.risk_level.toLowerCase();
+  const pct      = Math.round(prob * 100);
+  const card     = document.getElementById('result-card');
+  const section  = document.getElementById('result-section');
+
+  // Reset classes
+  card.className = 'result-card ' + risk;
+
+  document.getElementById('result-label').textContent = result.label;
+  document.getElementById('result-badge').textContent = result.risk_level + ' Risk';
+  document.getElementById('prob-num').textContent     = pct + '%';
+  document.getElementById('gauge-label').textContent  = pct + '%';
+
+  // Animate bar
+  setTimeout(() => {
+    document.getElementById('prob-bar').style.width = pct + '%';
+  }, 100);
+
+  // Gauge chart
+  drawGauge(prob, risk);
+
+  // Feature factors
+  const list = document.getElementById('factors-list');
+  list.innerHTML = '';
+  const maxImp = result.top_factors[0]?.importance || 1;
+  result.top_factors.forEach(f => {
+    const pct2 = Math.round((f.importance / maxImp) * 100);
+    const name = f.feature.replace(/_/g, ' ');
+    list.innerHTML += `
+      <div class="factor-item">
+        <div class="factor-name-row">
+          <span class="factor-name">${name}</span>
+          <span class="factor-val">${(f.importance * 100).toFixed(1)}%</span>
+        </div>
+        <div class="factor-bar-wrap">
+          <div class="factor-bar" style="width:${pct2}%"></div>
+        </div>
+      </div>`;
+  });
+
+  // Doctor Summary
+  const docSum = document.getElementById('doctor-summary');
+  if (docSum && result.doctor_summary) {
+    docSum.textContent = result.doctor_summary;
+  }
+
+  // Reveal
+  section.classList.add('visible');
+  section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Store history id and enable PDF button after prediction ───────────────
+
+function drawGauge(prob, risk) {
+  const colors = {
+    low:      ['#27AE60', '#EAF7EE'],
+    moderate: ['#E8900C', '#FEF3E2'],
+    high:     ['#E05252', '#FCEAEA'],
+  };
+  const [fill, bg] = colors[risk] || colors.low;
+  const pct = prob;
+
+  if (gaugeChart) gaugeChart.destroy();
+
+  const ctx = document.getElementById('gauge-chart').getContext('2d');
+  gaugeChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [pct, 1 - pct],
+        backgroundColor: [fill, bg],
+        borderWidth: 0,
+        circumference: 180,
+        rotation: 270,
+      }],
+    },
+    options: {
+      responsive: false,
+      animation: { duration: 700, easing: 'easeInOutQuart' },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      cutout: '78%',
+    },
+  });
+}
+
+// ── History ────────────────────────────────────────────────────────────────
+function addToHistory(result, inputs) {
+  history.unshift({ result, inputs, ts: new Date() });
+  if (history.length > 20) history.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  const list  = document.getElementById('history-list');
+  const empty = document.getElementById('history-empty');
+  if (!history.length) {
+    list.style.display  = 'none';
+    empty.style.display = '';
+    return;
+  }
+  list.style.display  = '';
+  empty.style.display = 'none';
+  list.innerHTML = history.map(h => {
+    const ts = h.ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const risk = h.result.risk_level.toLowerCase();
+    const pct  = Math.round(h.result.probability * 100);
+    return `
+      <div class="history-row">
+        <div>
+          <div style="font-weight:500;">${h.result.label}</div>
+          <div class="ts">${ts} · G:${h.inputs.Glucose} BMI:${h.inputs.BMI}</div>
+        </div>
+        <div>
+          <div class="risk risk-${risk}">${pct}%</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function loadHistory() {
+  if (!token) return;
+  try {
+    const res = await fetch(API_BASE_URL + '/api/history', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    data.forEach(r => {
+      history.push({
+        result: r,
+        inputs: r.inputs,
+        ts: new Date(r.timestamp),
+      });
+    });
+    renderHistory();
+  } catch (_) {}
+}
+
+// ── Metrics ────────────────────────────────────────────────────────────────
+async function loadMetrics() {
+  try {
+    const res  = await fetch(API_BASE_URL + '/api/metrics');
+    const data = await res.json();
+    if (!data.models?.length) return;
+
+    const best = data.models.find(m => m.model === data.best_model) || data.models[0];
+    document.getElementById('m-acc').textContent = (best.accuracy * 100).toFixed(1) + '%';
+    document.getElementById('m-auc').textContent = best.roc_auc.toFixed(3);
+    document.getElementById('m-pre').textContent = (best.precision * 100).toFixed(1) + '%';
+    document.getElementById('m-f1').textContent  = best.f1.toFixed(3);
+    document.getElementById('m-name').textContent = data.best_model;
+  } catch (_) {}
+}
+
+// ── Auth Modal ────────────────────────────────────────────────────────────
+function openModal(tab) {
+  document.getElementById('modal-overlay').classList.add('open');
+  switchTab(tab);
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('modal-error').textContent = '';
+}
+function closeModalOnBg(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('tab-login').classList.toggle('active', isLogin);
+  document.getElementById('tab-register').classList.toggle('active', !isLogin);
+  document.getElementById('login-form').style.display    = isLogin ? '' : 'none';
+  document.getElementById('register-form').style.display = isLogin ? 'none' : '';
+  document.getElementById('modal-title').textContent     = isLogin ? 'Welcome back' : 'Create account';
+  document.getElementById('modal-error').textContent     = '';
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  if (!username || !password) {
+    document.getElementById('modal-error').textContent = 'Please fill all fields';
+    return;
+  }
+  try {
+    const res  = await fetch(API_BASE_URL + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+    setAuth(data.token, data.user);
+    closeModal();
+    showToast('Signed in as ' + data.user.username, 'success');
+    loadHistory();
+  } catch (err) {
+    document.getElementById('modal-error').textContent = err.message;
+  }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-user').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-pass').value;
+  if (!username || !email || !password) {
+    document.getElementById('modal-error').textContent = 'Please fill all fields';
+    return;
+  }
+  try {
+    const res  = await fetch(API_BASE_URL + '/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Registration failed');
+    setAuth(data.token, data.user);
+    closeModal();
+    showToast('Account created! Welcome, ' + data.user.username, 'success');
+  } catch (err) {
+    document.getElementById('modal-error').textContent = err.message;
+  }
+}
+
+function setAuth(t, u) {
+  token = t; user = u;
+  localStorage.setItem('drp_token', t);
+  localStorage.setItem('drp_user', JSON.stringify(u));
+  updateNav();
+}
+
+function doLogout() {
+  token = null; user = null;
+  localStorage.removeItem('drp_token');
+  localStorage.removeItem('drp_user');
+  updateNav();
+  showToast('Signed out successfully');
+}
+
+// ── PDF Download ───────────────────────────────────────────────────────────
+let lastHistoryId = null;
+
+function downloadPDF() {
+  if (!lastHistoryId) return;
+  window.open(`${API_BASE_URL}/api/report/${lastHistoryId}`, '_blank');
+}
+
+function resetForm() {
+  document.getElementById('predict-form').reset();
+  document.getElementById('result-section').classList.remove('visible');
+  clearErrors();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Multi-Format Predict ──────────────────────────────────────────────────
+let batchFile = null;
+
+function handleFileSelect(input) {
+  batchFile = input.files[0];
+  if (batchFile) {
+    document.getElementById('drop-filename').textContent = '✓ ' + batchFile.name;
+  }
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').style.borderColor = 'var(--border)';
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    batchFile = file;
+    document.getElementById('drop-filename').textContent = '✓ ' + file.name;
+  }
+}
+
+async function doUploadPredict() {
+  if (!batchFile) { showToast('Please select a file first', 'error'); return; }
+
+  const formData = new FormData();
+  formData.append('file', batchFile);
+
+  const headers = {};
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+
+  // Show loading indicator
+  const btn = document.querySelector('button[onclick="doUploadPredict()"]');
+  const originalText = btn.textContent;
+  btn.textContent = 'Processing...';
+  btn.disabled = true;
+
+  try {
+    const res  = await fetch(API_BASE_URL + '/api/upload_predict', { method: 'POST', headers, body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    renderBatchResults(data);
+    showToast(`Processed ${data.processed} valid records. Found ${data.total_found} total.`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+function renderBatchResults(data) {
+  const el = document.getElementById('batch-results');
+  el.style.display = '';
+  const rows = data.results.slice(0, 20);
+  const errCount = data.errors.length;
+
+  const diabeticCount = rows.filter(r => r.prediction === 1).length;
+  const avgProb = rows.length
+    ? (rows.reduce((s, r) => s + r.probability, 0) / rows.length * 100).toFixed(1)
+    : 0;
+
+  el.innerHTML = `
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px;">
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center;">
+        <div style="font-size:1.3rem; font-weight:600; color:var(--blue); font-family:var(--mono);">${data.processed}</div>
+        <div style="font-size:0.7rem; color:var(--muted);">Processed</div>
+      </div>
+      <div style="background:var(--red-bg); border:1px solid rgba(224,82,82,0.2); border-radius:8px; padding:10px; text-align:center;">
+        <div style="font-size:1.3rem; font-weight:600; color:var(--red); font-family:var(--mono);">${diabeticCount}</div>
+        <div style="font-size:0.7rem; color:var(--muted);">Diabetic</div>
+      </div>
+      <div style="background:var(--blue-glow); border:1px solid rgba(74,144,226,0.2); border-radius:8px; padding:10px; text-align:center;">
+        <div style="font-size:1.3rem; font-weight:600; color:var(--blue); font-family:var(--mono);">${avgProb}%</div>
+        <div style="font-size:0.7rem; color:var(--muted);">Avg Risk</div>
+      </div>
+    </div>
+    <div style="max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
+      <table style="width:100%; font-size:0.75rem; border-collapse:collapse;">
+        <thead>
+          <tr style="background:var(--bg);">
+            <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:500;">#</th>
+            <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:500;">Glucose</th>
+            <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:500;">BMI</th>
+            <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:500;">Age</th>
+            <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:500;">Risk</th>
+            <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:500;">Prob</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r, i) => {
+            const riskCls = r.risk_level.toLowerCase();
+            return `<tr style="border-top:1px solid var(--bg);">
+              <td style="padding:6px 10px; color:var(--muted);">${i+1}</td>
+              <td style="padding:6px 10px;">${r.Glucose}</td>
+              <td style="padding:6px 10px;">${r.BMI}</td>
+              <td style="padding:6px 10px;">${r.Age}</td>
+              <td style="padding:6px 10px;"><span class="risk risk-${riskCls}">${r.risk_level}</span></td>
+              <td style="padding:6px 10px; font-family:var(--mono);">${Math.round(r.probability*100)}%</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    ${errCount ? `<div style="font-size:0.72rem; color:var(--red); margin-top:6px;">⚠ ${errCount} row(s) had errors</div>` : ''}
+    <button onclick="downloadBatchCSV(${JSON.stringify(data.results).replace(/"/g,'&quot;')})"
+            style="width:100%; margin-top:10px; padding:8px; border-radius:8px;
+                   border:1px solid var(--border); background:var(--bg);
+                   color:var(--blue); font-family:var(--font); font-size:0.8rem; cursor:pointer;">
+      ↓ Download Results CSV
+    </button>`;
+}
+
+function downloadBatchCSV(results) {
+  if (!results.length) return;
+  const keys = ['Pregnancies','Glucose','BloodPressure','SkinThickness','Insulin',
+                 'BMI','DiabetesPedigreeFunction','Age','prediction','probability','risk_level'];
+  const csv  = [keys.join(','),
+    ...results.map(r => keys.map(k => r[k] ?? '').join(','))
+  ].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a    = Object.assign(document.createElement('a'),
+    { href: URL.createObjectURL(blob), download: 'batch_results.csv' });
+  a.click();
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className   = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ── Calculator Modal ───────────────────────────────────────────────────────
+function openCalcModal(tab) {
+  document.getElementById('calc-modal-overlay').classList.add('open');
+  switchCalcTab(tab);
+}
+function closeCalcModal() {
+  document.getElementById('calc-modal-overlay').classList.remove('open');
+}
+function closeCalcModalOnBg(e) {
+  if (e.target === document.getElementById('calc-modal-overlay')) closeCalcModal();
+}
+function switchCalcTab(tab) {
+  const isBmi = tab === 'bmi';
+  document.getElementById('tab-bmi').classList.toggle('active', isBmi);
+  document.getElementById('tab-dpf').classList.toggle('active', !isBmi);
+  document.getElementById('calc-bmi-form').style.display = isBmi ? '' : 'none';
+  document.getElementById('calc-dpf-form').style.display = isBmi ? 'none' : '';
+}
+function calculateBMI() {
+  const w = parseFloat(document.getElementById('calc-weight').value);
+  const h = parseFloat(document.getElementById('calc-height').value) / 100;
+  if (w > 0 && h > 0) {
+    const bmi = (w / (h * h)).toFixed(1);
+    document.getElementById('f-bmi').value = bmi;
+    closeCalcModal();
+    showToast('BMI calculated and applied', 'success');
+  } else {
+    showToast('Please enter valid weight and height', 'error');
+  }
+}
+function calculateDPF() {
+  const p = parseInt(document.getElementById('calc-dpf-parent').value);
+  const r = parseInt(document.getElementById('calc-dpf-relative').value);
+  let dpf = 0.15; // Base population risk
+  if (p === 1) dpf += 0.35;
+  if (p === 2) dpf += 0.70;
+  if (r === 1) dpf += 0.15;
+  if (r === 2) dpf += 0.25;
+  
+  document.getElementById('f-dpf').value = dpf.toFixed(3);
+  closeCalcModal();
+  showToast('Pedigree Function estimated and applied', 'success');
+}
+</script>
+</body>
+</html>
