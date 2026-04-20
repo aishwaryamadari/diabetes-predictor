@@ -1164,6 +1164,18 @@ async function doLogin() {
     return;
   }
 
+  const user = data.user;
+
+  if (user) {
+    await supabase.from("users").upsert([
+      {
+        id: user.id,
+        full_name: user.email.split("@")[0],
+        email: user.email
+      }
+    ]);
+  }
+
   closeModal();
   showToast("Login successful!", "success");
 }
