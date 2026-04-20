@@ -1145,51 +1145,59 @@ function switchTab(tab) {
 }
 
 async function doLogin() {
-  const username = document.getElementById('login-user').value.trim();
-  const password = document.getElementById('login-pass').value;
-  if (!username || !password) {
-    document.getElementById('modal-error').textContent = 'Please fill all fields';
+  const email = document.getElementById("login-user").value.trim();
+  const password = document.getElementById("login-pass").value;
+
+  if (!email || !password) {
+    document.getElementById("modal-error").textContent =
+      "Please fill all fields";
     return;
   }
-  try {
-    const res  = await fetch(API_BASE_URL + '/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Login failed');
-    setAuth(data.token, data.user);
-    closeModal();
-    showToast('Signed in as ' + data.user.username, 'success');
-    loadHistory();
-  } catch (err) {
-    document.getElementById('modal-error').textContent = err.message;
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    document.getElementById("modal-error").textContent = error.message;
+    return;
   }
+
+  closeModal();
+  showToast("Login successful!", "success");
 }
 
 async function doRegister() {
-  const username = document.getElementById('reg-user').value.trim();
-  const email    = document.getElementById('reg-email').value.trim();
-  const password = document.getElementById('reg-pass').value;
+  const username = document.getElementById("reg-user").value.trim();
+  const email = document.getElementById("reg-email").value.trim();
+  const password = document.getElementById("reg-pass").value;
+
   if (!username || !email || !password) {
-    document.getElementById('modal-error').textContent = 'Please fill all fields';
+    document.getElementById("modal-error").textContent =
+      "Please fill all fields";
     return;
   }
-  try {
-    const res  = await fetch(API_BASE_URL + '/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Registration failed');
-    setAuth(data.token, data.user);
-    closeModal();
-    showToast('Account created! Welcome, ' + data.user.username, 'success');
-  } catch (err) {
-    document.getElementById('modal-error').textContent = err.message;
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    document.getElementById("modal-error").textContent = error.message;
+    return;
   }
+
+  await supabase.from("users").insert([
+    {
+      full_name: username,
+      email: email
+    }
+  ]);
+
+  closeModal();
+  showToast("Signup successful! Check your email.", "success");
 }
 
 function setAuth(t, u) {
