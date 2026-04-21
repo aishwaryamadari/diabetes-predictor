@@ -1302,17 +1302,11 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
+    // ── Supabase Init (declared ONCE) ──────────────────────────────────────────
     const supabaseUrl = "https://ijvuvhuryaiszfwlyjhf.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdnV2aHVyeWFpc3pmd2x5amhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ1OTEwNjksImV4cCI6MjA2MDE3MDY5fQ.l0iN0_2U5Wb1R2-YV1r-5-l2Q9H2Fv9-qj6p8N8iA8Y";
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdnV2aHVyeWFpc3pmd2x5amhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ1OTEwNjksImV4cCI6MjA2MDEwNzA2OX0.l0iN0_2U5Wb1R2-YV1r-5-l2Q9H2Fv9-qj6p8N8iA8Y";
-
-    const supabase = window.supabase.createClient(
-      supabaseUrl,
-      supabaseKey
-    );
-  </script>
-
-  <script>
     // ── API Config ─────────────────────────────────────────────────────────────
     const API_BASE_URL = "https://aishwaryamadari-diabetes-predictor.hf.space";
     // ── State ──────────────────────────────────────────────────────────────────
@@ -1382,7 +1376,6 @@
       clearErrors();
       const data = getFormData();
 
-      // Basic client-side validation
       const map = {
         preg: ['Pregnancies', 0, 20],
         glucose: ['Glucose', 44, 280],
@@ -1404,7 +1397,6 @@
       }
       if (hasErr) return;
 
-      // UI: loading state
       const btn = document.getElementById('predict-btn');
       const btnText = document.getElementById('btn-text');
       const spinner = document.getElementById('btn-spinner');
@@ -1427,7 +1419,6 @@
 
         showResult(result);
         addToHistory(result, data);
-        // Enable PDF download
         if (result.history_id) {
           lastHistoryId = result.history_id;
           document.getElementById('download-pdf-btn').disabled = false;
@@ -1448,7 +1439,6 @@
       const card = document.getElementById('result-card');
       const section = document.getElementById('result-section');
 
-      // Reset classes
       card.className = 'result-card ' + risk;
 
       document.getElementById('result-label').textContent = result.label;
@@ -1456,15 +1446,12 @@
       document.getElementById('prob-num').textContent = pct + '%';
       document.getElementById('gauge-label').textContent = pct + '%';
 
-      // Animate bar
       setTimeout(() => {
         document.getElementById('prob-bar').style.width = pct + '%';
       }, 100);
 
-      // Gauge chart
       drawGauge(prob, risk);
 
-      // Feature factors
       const list = document.getElementById('factors-list');
       list.innerHTML = '';
       const maxImp = result.top_factors[0]?.importance || 1;
@@ -1483,18 +1470,14 @@
       </div>`;
       });
 
-      // Doctor Summary
       const docSum = document.getElementById('doctor-summary');
       if (docSum && result.doctor_summary) {
         docSum.textContent = result.doctor_summary;
       }
 
-      // Reveal
       section.classList.add('visible');
       section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-
-    // ── Store history id and enable PDF button after prediction ───────────────
 
     function drawGauge(prob, risk) {
       const colors = {
@@ -1597,7 +1580,7 @@
       } catch (_) { }
     }
 
-    // ── Auth Modal ────────────────────────────────────────────────────────────
+    // ── Auth Modal ─────────────────────────────────────────────────────────────
     function openModal(tab) {
       document.getElementById('modal-overlay').classList.add('open');
       switchTab(tab);
@@ -1624,31 +1607,28 @@
       const password = document.getElementById("login-pass").value;
 
       if (!email || !password) {
-        document.getElementById("modal-error").textContent =
-          "Please fill all fields";
+        document.getElementById("modal-error").textContent = "Please fill all fields";
         return;
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
         document.getElementById("modal-error").textContent = error.message;
         return;
       }
 
-      const user = data.user;
-
-      if (user) {
-        await supabase.from("users").upsert([
-          {
-            id: user.id,
-            full_name: user.email.split("@")[0],
-            email: user.email
-          }
-        ]);
+      if (data.user) {
+        await supabase.from("users").upsert([{
+          id: data.user.id,
+          full_name: data.user.email.split("@")[0],
+          email: data.user.email
+        }]);
+        user = { username: data.user.email.split("@")[0] };
+        token = data.session.access_token;
+        localStorage.setItem('drp_token', token);
+        localStorage.setItem('drp_user', JSON.stringify(user));
+        updateNav();
       }
 
       closeModal();
@@ -1661,15 +1641,11 @@
       const password = document.getElementById("reg-pass").value;
 
       if (!username || !email || !password) {
-        document.getElementById("modal-error").textContent =
-          "Please fill all fields";
+        document.getElementById("modal-error").textContent = "Please fill all fields";
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password
-      });
+      const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
         document.getElementById("modal-error").textContent = error.message;
@@ -1680,17 +1656,11 @@
       showToast("Signup successful! Please check your email.", "success");
     }
 
-    function setAuth(t, u) {
-      token = t; user = u;
-      localStorage.setItem('drp_token', t);
-      localStorage.setItem('drp_user', JSON.stringify(u));
-      updateNav();
-    }
-
     function doLogout() {
       token = null; user = null;
       localStorage.removeItem('drp_token');
       localStorage.removeItem('drp_user');
+      supabase.auth.signOut();
       updateNav();
       showToast('Signed out successfully');
     }
@@ -1710,7 +1680,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ── Multi-Format Predict ──────────────────────────────────────────────────
+    // ── Multi-Format Predict ───────────────────────────────────────────────────
     let batchFile = null;
 
     function handleFileSelect(input) {
@@ -1739,7 +1709,6 @@
       const headers = {};
       if (token) headers['Authorization'] = 'Bearer ' + token;
 
-      // Show loading indicator
       const btn = document.querySelector('button[onclick="doUploadPredict()"]');
       const originalText = btn.textContent;
       btn.textContent = 'Processing...';
@@ -1877,7 +1846,7 @@
     function calculateDPF() {
       const p = parseInt(document.getElementById('calc-dpf-parent').value);
       const r = parseInt(document.getElementById('calc-dpf-relative').value);
-      let dpf = 0.15; // Base population risk
+      let dpf = 0.15;
       if (p === 1) dpf += 0.35;
       if (p === 2) dpf += 0.70;
       if (r === 1) dpf += 0.15;
@@ -1888,6 +1857,3 @@
       showToast('Pedigree Function estimated and applied', 'success');
     }
   </script>
-</body>
-
-</html>
