@@ -6,7 +6,6 @@ __pycache__/
 .env.local
 *.db
 uploads/
-saved_model/best_model.joblib
 .DS_Store
 *.egg-info/
 dist/

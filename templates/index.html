@@ -1305,7 +1305,7 @@
     // ── Supabase Init (declared ONCE) ──────────────────────────────────────────
     const supabaseUrl = "https://ijvuvhuryaiszfwlyjhf.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdnV2aHVyeWFpc3pmd2x5amhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ1OTEwNjksImV4cCI6MjA2MDE3MDY5fQ.l0iN0_2U5Wb1R2-YV1r-5-l2Q9H2Fv9-qj6p8N8iA8Y";
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     // ── API Config ─────────────────────────────────────────────────────────────
     const API_BASE_URL = "https://aishwaryamadari-diabetes-predictor.hf.space";
@@ -1430,19 +1430,6 @@
         btnText.textContent = 'Predict Risk';
         spinner.classList.remove('active');
       }
-    }
-
-    function showResult(result) {
-      const prob = result.probability;
-      const risk = result.risk_level.toLowerCase();
-      const pct = Math.round(prob * 100);
-      const card = document.getElementById('result-card');
-      const section = document.getElementById('result-section');
-
-      card.className = 'result-card ' + risk;
-
-      document.getElementById('result-label').textContent = result.label;
-      document.getElementById('result-badge').textContent = result.risk_level + ' Risk';
       document.getElementById('prob-num').textContent = pct + '%';
       document.getElementById('gauge-label').textContent = pct + '%';
 
@@ -1611,7 +1598,7 @@
         return;
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
       if (error) {
         document.getElementById("modal-error").textContent = error.message;
@@ -1619,7 +1606,7 @@
       }
 
       if (data.user) {
-        await supabase.from("users").upsert([{
+        await supabaseClient.from("users").upsert([{
           id: data.user.id,
           full_name: data.user.email.split("@")[0],
           email: data.user.email
@@ -1645,7 +1632,7 @@
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabaseClient.auth.signUp({ email, password });
 
       if (error) {
         document.getElementById("modal-error").textContent = error.message;
@@ -1660,7 +1647,7 @@
       token = null; user = null;
       localStorage.removeItem('drp_token');
       localStorage.removeItem('drp_user');
-      supabase.auth.signOut();
+      supabaseClient.auth.signOut();
       updateNav();
       showToast('Signed out successfully');
     }
